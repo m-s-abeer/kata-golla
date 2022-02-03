@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Grid, TextField } from "@material-ui/core";
 import { useHistory } from "react-router-dom";
-import { Redirect } from "react-router-dom";
+import ArrowForwardIosIcon from "@material-ui/icons/ArrowForwardIos";
 
 let Home = () => {
   const [gameId, setGameId] = useState("");
@@ -10,7 +10,6 @@ let Home = () => {
   let routeHistory = useHistory();
 
   const handleStartGameClick = () => {
-    console.log("Clicked!");
     setButtonDisabled(true);
     // create new game
     routeHistory.push("/play/game");
@@ -23,7 +22,7 @@ let Home = () => {
       spacing={3}
       direction="column"
       alignItems="center"
-      justify="center"
+      justifyContent="center"
       style={{ minHeight: "100%" }}
     >
       <Grid item xs={12}>
@@ -50,6 +49,7 @@ let Home = () => {
           variant="contained"
           color="primary"
           onClick={handleStartGameClick}
+          endIcon={<ArrowForwardIosIcon />}
         >
           Start new game
         </Button>
