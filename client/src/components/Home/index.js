@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button, Grid, TextField } from "@material-ui/core";
 import { useHistory } from "react-router-dom";
 import ArrowForwardIosIcon from "@material-ui/icons/ArrowForwardIos";
+import axios from "axios";
 
 let Home = () => {
   const [gameId, setGameId] = useState("");
@@ -11,8 +12,11 @@ let Home = () => {
 
   const handleStartGameClick = () => {
     setButtonDisabled(true);
-    // create new game
-    routeHistory.push("/play/game");
+    axios.get("api/game/create").then((res) => {
+      const game_uuid = res.data.uuid;
+      console.log(game_uuid);
+      routeHistory.push(`/play/${game_uuid}`);
+    });
     setButtonDisabled(false);
   };
 

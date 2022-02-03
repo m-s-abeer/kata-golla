@@ -3,6 +3,7 @@ const app = express();
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
+const { nanoid } = require("nanoid");
 
 app.use(cors());
 
@@ -24,4 +25,11 @@ io.on("connection", (socket) => {
 
 server.listen(3001, () => {
   console.log("SERVER RUNNING!");
+});
+
+app.get("/api/game/create", (req, res) => {
+  const uuid = nanoid();
+  return res.send({
+    uuid: uuid,
+  });
 });
