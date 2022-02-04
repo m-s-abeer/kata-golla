@@ -14,6 +14,10 @@ const GameSchema = mongoose.Schema({
     type: Number,
     default: 0,
   },
+  first_player: {
+    type: Number,
+    default: 0,
+  },
   ties: {
     type: Number,
     default: 0,

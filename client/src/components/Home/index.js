@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Grid, TextField } from "@material-ui/core";
+import { Button, Grid, TextField, Typography } from "@material-ui/core";
 import { useHistory } from "react-router-dom";
 import ArrowForwardIosIcon from "@material-ui/icons/ArrowForwardIos";
 import axios from "axios";
@@ -31,7 +31,7 @@ let Home = () => {
       justifyContent="center"
       style={{ minHeight: "100%" }}
     >
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <TextField
           id="game-id"
           label="Game title"
@@ -39,7 +39,7 @@ let Home = () => {
           value={gameTitle}
           onChange={(e) => setGameTitle(e.target.value)}
         />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12}>
         <Button
           disabled={buttonDisabled}
@@ -48,7 +48,7 @@ let Home = () => {
           onClick={handleStartGameClick}
           endIcon={<ArrowForwardIosIcon />}
         >
-          Start new game
+          <Typography>Let's play!</Typography>
         </Button>
       </Grid>
     </Grid>
