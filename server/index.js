@@ -31,7 +31,7 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log(socket.id);
+  console.log(socket.id, "connected");
   socket.on("disconnect", async () => {
     await remove_player(socket.id);
     console.log(`User Disconnected! Socket id: ${socket.id}`);
@@ -62,10 +62,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("make_move", async (row_id, col_id) => {
-    const game = await make_a_move(socket, row_id, col_id);
-    if (game && game !== {}) {
-      await io.to(game._id.toString()).emit("game_updated", game);
-    }
+    try {
+      const game = await make_a_move(socket, row_id, col_id);
+      if (game && game !== {}) {
+        await io.to(game._id.toString()).emit("game_updated", game);
+      }
+    } catch (e) {}
   });
 });
 

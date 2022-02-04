@@ -105,12 +105,10 @@ let Game = (props) => {
       .get(`/api/game/${game_id}`)
       .then((res) => {
         setInvalidGame(false);
-        console.log(res.data);
         setGameObj(res.data);
         socket.emit("join_game", res.data._id);
         socket.on("join_game_success", (res) => {
           setPlayerInfo(res.data);
-          console.log("Success: Joined Game!");
         });
         socket.on("join_game_error", (err) => {
           console.log("error", err.error);
@@ -138,7 +136,7 @@ let Game = (props) => {
     >
       <Grid container alignItems="center" direction="column">
         <Typography variant="h1">KATA GOLLA</Typography>
-        <Typography variant="h5">{gameObj.title || "No title"}</Typography>
+        {/* <Typography variant="h5">{gameObj.title || "No title"}</Typography> */}
       </Grid>
 
       <Box height={50} />

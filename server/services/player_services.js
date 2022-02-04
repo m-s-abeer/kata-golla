@@ -8,14 +8,13 @@ const get_player_init_info = async (game_sockets, socket_id, game_id) => {
   };
 
   if (game_sockets) {
+    // if another player is active, get different player number
     const [other_socket] = game_sockets;
     const otherPlayer = await Player.findOne({ socket_id: other_socket });
 
     if (otherPlayer.player_num === playerData.player_num) {
       playerData.player_num = 1 - playerData.player_num;
     }
-  } else {
-    console.log("Creating first player");
   }
 
   const newPlayer = new Player(playerData);
