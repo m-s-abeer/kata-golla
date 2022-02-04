@@ -10,9 +10,12 @@ export const gameStyles = makeStyles((theme) => ({
       height: "10rem",
     },
   },
-  hover: {
+  activeHover: {
     "&:hover": {
       backgroundColor: "#b5e2ff",
     },
+  },
+  disabledCell: {
+    backgroundColor: "#f0f0f0",
   },
 }));
