@@ -5,18 +5,20 @@ import ArrowForwardIosIcon from "@material-ui/icons/ArrowForwardIos";
 import axios from "axios";
 
 let Home = () => {
-  const [gameId, setGameId] = useState("");
-  const [username, setUsername] = useState("");
+  const [gameTitle, setGameTitle] = useState("");
   const [buttonDisabled, setButtonDisabled] = useState(false);
   let routeHistory = useHistory();
 
   const handleStartGameClick = () => {
     setButtonDisabled(true);
-    axios.get("api/game/create").then((res) => {
-      const game_uuid = res.data.uuid;
-      console.log(game_uuid);
-      routeHistory.push(`/play/${game_uuid}`);
-    });
+    axios
+      .post("api/game/create", {
+        title: gameTitle,
+      })
+      .then((res) => {
+        const gameId = res.data._id;
+        routeHistory.push(`/play/${gameId}`);
+      });
     setButtonDisabled(false);
   };
 
@@ -32,19 +34,10 @@ let Home = () => {
       <Grid item xs={12}>
         <TextField
           id="game-id"
-          label="Game ID"
+          label="Game title"
           variant="outlined"
-          value={gameId}
-          onChange={(e) => setGameId(e.target.value)}
-        />
-      </Grid>
-      <Grid item xs={12}>
-        <TextField
-          id="outlined-search"
-          label="Username"
-          variant="outlined"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          value={gameTitle}
+          onChange={(e) => setGameTitle(e.target.value)}
         />
       </Grid>
       <Grid item xs={12}>

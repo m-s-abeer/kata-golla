@@ -1,7 +1,11 @@
 import { Grid, Box, Typography, Card, CardContent } from "@material-ui/core";
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { gameStyles } from "./styles";
-import clsx from "clsx";
+import axios from "axios";
+import { useHistory, useParams } from "react-router";
+import io from "socket.io-client";
+
+const socket = io.connect("http://localhost:3001");
 
 let GridCell = (props) => {
   const classes = gameStyles();
@@ -40,23 +44,41 @@ let ScoreGrid = (props) => {
   const { title, score } = props;
   return (
     <Grid item container direction="column" xs={3} alignItems="center">
-      <Grid>
-        <Typography variant="h4">{title}</Typography>
-      </Grid>
-      <Grid>
-        <Typography variant="h4">{score}</Typography>
-      </Grid>
+      <Typography variant="h4">{title}</Typography>
+      <Typography variant="h4">{score}</Typography>
     </Grid>
   );
 };
 
-let Game = () => {
+let Game = (props) => {
+  const { game_id } = useParams();
   const initGameState = [
     ["", "", ""],
     ["", "", ""],
     ["", "", ""],
   ];
+  const [invalidGame, setInvalidGame] = useState(true);
   const [gameState, setGameState] = useState(initGameState);
+  const [gameObj, setGameObj] = useState({});
+  let routeHistory = useHistory();
+
+  useEffect(() => {
+    axios
+      .get(`/api/game/${game_id}`)
+      .then((res) => {
+        console.log(res.data);
+        setInvalidGame(false);
+        const { _id } = res.data;
+        socket.emit("join_game", _id);
+        socket.on("join_game_error", (data) => {
+          console.log(data.error);
+          routeHistory.push(`/`);
+        });
+      })
+      .catch((err) => {
+        routeHistory.push(`/`);
+      });
+  }, []);
 
   return (
     <Grid
@@ -68,8 +90,9 @@ let Game = () => {
       alignContent="center"
       style={{ minHeight: "100%" }}
     >
-      <Grid>
+      <Grid container alignItems="center" direction="column">
         <Typography variant="h1">KATA GOLLA</Typography>
+        <Typography variant="h5">{gameObj.title || "No title"}</Typography>
       </Grid>
 
       <Box height={50} />

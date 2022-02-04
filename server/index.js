@@ -30,6 +30,20 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`User Disconnected! Socket id: ${socket.id}`);
   });
+
+  socket.on("join_game", (gameId) => {
+    const room_sockets = io.sockets.adapter.rooms.get(gameId);
+    const room_size = room_sockets ? room_sockets.size : 0;
+    console.log(room_size);
+    if (room_size < 2) {
+      socket.join(gameId);
+      socket.emit("join_game_success");
+    } else {
+      socket.emit("join_game_error", {
+        message: "Too late buddy! The game is full. Try creating another.",
+      });
+    }
+  });
 });
 
 server.listen(3001, () => {
