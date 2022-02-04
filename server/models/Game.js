@@ -2,15 +2,7 @@ const mongoose = require("mongoose");
 
 const GameSchema = mongoose.Schema({
   title: String,
-  player0_id: {
-    type: String,
-    default: "",
-  },
-  player1_id: {
-    type: String,
-    default: "",
-  },
-  player_symobls: {
+  player_signs: {
     type: [String],
     default: ["X", "O"],
   },
