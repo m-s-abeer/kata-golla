@@ -9,7 +9,12 @@ const socket = io.connect("http://localhost:3001");
 
 let GridCell = (props) => {
   const classes = gameStyles();
-  const { rowId, colId, value } = props;
+  const { row_id, col_id, game_id, value } = props;
+
+  const handleCellClick = () => {
+    socket.emit("make_move", row_id, col_id);
+  };
+
   return (
     <Grid
       item
@@ -22,7 +27,7 @@ let GridCell = (props) => {
           : `${classes.singleCell}`
       }
       component="div"
-      onClick={() => console.log(`clicked row = ${rowId} col = ${colId}`)}
+      onClick={handleCellClick}
     >
       <Typography variant="h1">{value}</Typography>
     </Grid>
@@ -30,11 +35,19 @@ let GridCell = (props) => {
 };
 
 let GridRow = (props) => {
-  const { row, rowId } = props;
+  const { row, row_id, game_id } = props;
   return (
     <Grid item container justifyContent="center" direction="row">
       {row.map((col, idx) => {
-        return <GridCell value={col} rowId={rowId} colId={idx} key={idx} />;
+        return (
+          <GridCell
+            value={col}
+            row_id={row_id}
+            col_id={idx}
+            game_id={game_id}
+            key={idx}
+          />
+        );
       })}
     </Grid>
   );
@@ -57,28 +70,61 @@ let Game = (props) => {
     ["", "", ""],
     ["", "", ""],
   ];
+
+  const playerInitState = {
+    game_id: "",
+    socket_id: "",
+    player_num: "",
+  };
+
   const [invalidGame, setInvalidGame] = useState(true);
   const [gameState, setGameState] = useState(initGameState);
-  const [gameObj, setGameObj] = useState({});
+  const [gameObj, setGameObj] = useState({
+    title: "",
+    player0_wins: 0,
+    player1_wins: 0,
+    ties: 0,
+    turn: 0,
+    current_state: [
+      ["", "", ""],
+      ["", "", ""],
+      ["", "", ""],
+    ],
+  });
+  const [playerInfo, setPlayerInfo] = useState(playerInitState);
   let routeHistory = useHistory();
+
+  useEffect(() => {
+    socket.on("game_updated", (game) => {
+      setGameObj(game);
+    });
+  }, [socket]);
 
   useEffect(() => {
     axios
       .get(`/api/game/${game_id}`)
       .then((res) => {
-        console.log(res.data);
         setInvalidGame(false);
-        const { _id } = res.data;
-        socket.emit("join_game", _id);
-        socket.on("join_game_error", (data) => {
-          console.log(data.error);
+        console.log(res.data);
+        setGameObj(res.data);
+        socket.emit("join_game", res.data._id);
+        socket.on("join_game_success", (res) => {
+          setPlayerInfo(res.data);
+          console.log("Success: Joined Game!");
+        });
+        socket.on("join_game_error", (err) => {
+          console.log("error", err.error);
           routeHistory.push(`/`);
         });
       })
-      .catch((err) => {
+      .catch(() => {
         routeHistory.push(`/`);
       });
   }, []);
+
+  useEffect(() => {
+    setGameState(gameObj.current_state);
+  }, [gameObj.current_state]);
 
   return (
     <Grid
@@ -97,15 +143,15 @@ let Game = (props) => {
 
       <Box height={50} />
       {gameState.map((row, idx) => {
-        return <GridRow row={row} rowId={idx} key={idx} />;
+        return <GridRow row={row} row_id={idx} key={idx} game_id={game_id} />;
       })}
 
       <Box height={50} />
 
       <Grid item container direction="row" justifyContent="center">
-        <ScoreGrid title="Player 1 score" score={0} />
-        <ScoreGrid title="Draws" score={0} />
-        <ScoreGrid title="Player 2 score" score={0} />
+        <ScoreGrid title="Player 1 score" score={gameObj.player0_wins} />
+        <ScoreGrid title="Ties" score={gameObj.ties} />
+        <ScoreGrid title="Player 2 score" score={gameObj.player1_wins} />
       </Grid>
     </Grid>
   );

@@ -7,6 +7,11 @@ const { nanoid } = require("nanoid");
 const mongoose = require("mongoose");
 const gamesRoute = require("./routes/games");
 const bodyParser = require("body-parser");
+const {
+  get_player_init_info,
+  remove_player,
+} = require("./services/player_services");
+const { make_a_move } = require("./services/game_services");
 
 mongoose.connect("mongodb://localhost/kata-golla", () => {
   console.log("Connected to DB");
@@ -27,21 +32,39 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   console.log(socket.id);
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
+    await remove_player(socket.id);
     console.log(`User Disconnected! Socket id: ${socket.id}`);
   });
 
-  socket.on("join_game", (gameId) => {
-    const room_sockets = io.sockets.adapter.rooms.get(gameId);
-    const room_size = room_sockets ? room_sockets.size : 0;
-    console.log(room_size);
-    if (room_size < 2) {
-      socket.join(gameId);
-      socket.emit("join_game_success");
-    } else {
-      socket.emit("join_game_error", {
-        message: "Too late buddy! The game is full. Try creating another.",
+  socket.on("join_game", async (game_id) => {
+    let game_sockets = io.sockets.adapter.rooms.get(game_id);
+    let player_count = game_sockets ? game_sockets.size : 0;
+
+    if (player_count < 2) {
+      player_init_info = await get_player_init_info(
+        game_sockets,
+        socket.id,
+        game_id
+      );
+
+      socket.emit("join_game_success", {
+        data: player_init_info,
       });
+
+      await socket.join(game_id);
+    } else {
+      await socket.emit("join_game_error", {
+        message:
+          "Too late buddy! Are you really invited? Sad life! Try creating another.",
+      });
+    }
+  });
+
+  socket.on("make_move", async (row_id, col_id) => {
+    const game = await make_a_move(socket, row_id, col_id);
+    if (game && game !== {}) {
+      await io.to(game._id.toString()).emit("game_updated", game);
     }
   });
 });
