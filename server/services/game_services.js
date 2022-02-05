@@ -66,7 +66,7 @@ let update_game_for_another_play = (game) => {
   return game;
 };
 
-let make_a_move = async (socket, row_id, col_id) => {
+let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
   const player = await Player.findOne({ socket_id: socket.id });
   if (!player) {
     return null;
@@ -74,7 +74,7 @@ let make_a_move = async (socket, row_id, col_id) => {
   let game = await Game.findById(player.game_id);
   const gameObj = game.toObject();
 
-  const players = await Player.find({ game_id: player.game_id });
+  let players = await Player.find({ game_id: player.game_id });
   const active_player = game.turn % 2 ^ game.first_player;
   if (
     active_player == player.player_num &&
@@ -82,6 +82,9 @@ let make_a_move = async (socket, row_id, col_id) => {
     players &&
     players.length == 2
   ) {
+    if (players[0].player_num === 1) {
+      [players[0], players[1]] = [players[1], players[0]];
+    }
     player_sign = game.player_signs[player.player_num];
 
     new_game_state = gameObj.current_state;
@@ -89,12 +92,21 @@ let make_a_move = async (socket, row_id, col_id) => {
     winning = is_winning_state(new_game_state);
 
     if (winning === true) {
-      if (active_player === 0) game.player0_wins++;
-      else game.player1_wins++;
+      if (active_player === 0) {
+        game.player0_wins++;
+        endGameCallback(players[0].socket_id.toString(), 1);
+        endGameCallback(players[1].socket_id.toString(), 0);
+      } else {
+        game.player1_wins++;
+        endGameCallback(players[0].socket_id.toString(), 0);
+        endGameCallback(players[1].socket_id.toString(), 1);
+      }
       game = update_game_for_another_play(game);
     } else if (game.turn == 8) {
       game.ties = game.ties + 1;
       game = update_game_for_another_play(game);
+      endGameCallback(players[0].socket_id.toString(), -1);
+      endGameCallback(players[1].socket_id.toString(), -1);
     } else {
       game.current_state = new_game_state;
       game.turn = game.turn + 1;

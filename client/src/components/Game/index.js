@@ -1,19 +1,14 @@
-import { Grid, Box, Typography, Card, CardContent } from "@material-ui/core";
-import React, { Fragment, useState, useEffect } from "react";
+import { Grid, Box, Typography } from "@material-ui/core";
+import React, { useState, useEffect } from "react";
 import { gameStyles } from "./styles";
 import axios from "axios";
 import { useHistory, useParams } from "react-router";
 import io from "socket.io-client";
+import EndGameModal from "../EndGamePopup";
 
-const socket = io.connect("http://localhost:3001");
-
-let GridCell = (props) => {
+let GameCell = (props) => {
   const classes = gameStyles();
-  const { row_id, col_id, game_id, player_active, value } = props;
-
-  const handleCellClick = () => {
-    socket.emit("make_move", row_id, col_id);
-  };
+  const { row_id, col_id, cellClickCallback, player_active, value } = props;
 
   return (
     <Grid
@@ -29,25 +24,25 @@ let GridCell = (props) => {
           : `${classes.singleCell} ${classes.disabledCell}`
       }
       component="div"
-      onClick={player_active ? handleCellClick : null}
+      onClick={player_active ? () => cellClickCallback(row_id, col_id) : null}
     >
       <Typography variant="h1">{value}</Typography>
     </Grid>
   );
 };
 
-let GridRow = (props) => {
-  const { row, row_id, game_id, player_active } = props;
+let GameRow = (props) => {
+  const { row, row_id, player_active, cellClickCallback } = props;
   return (
     <Grid item container justifyContent="center" direction="row">
       {row.map((col, idx) => {
         return (
-          <GridCell
+          <GameCell
             value={col}
             row_id={row_id}
             col_id={idx}
-            game_id={game_id}
             player_active={player_active}
+            cellClickCallback={cellClickCallback}
             key={idx}
           />
         );
@@ -67,23 +62,20 @@ let ScoreGrid = (props) => {
 };
 
 let Game = (props) => {
-  const { game_id } = useParams();
+  const [socket, setSocket] = useState(null);
   const initGameState = [
     ["", "", ""],
     ["", "", ""],
     ["", "", ""],
   ];
 
-  const playerInitState = {
+  const initPlayerObj = {
     game_id: "",
     socket_id: "",
     player_num: "",
   };
 
-  const [invalidGame, setInvalidGame] = useState(true);
-  const [gameState, setGameState] = useState(initGameState);
-  const [playerActive, setPlayerActive] = useState(false);
-  const [gameObj, setGameObj] = useState({
+  const initGameObj = {
     title: "",
     player0_wins: 0,
     player1_wins: 0,
@@ -96,19 +88,74 @@ let Game = (props) => {
       ["", "", ""],
       ["", "", ""],
     ],
-  });
-  const [playerInfo, setPlayerInfo] = useState(playerInitState);
+  };
+
   let routeHistory = useHistory();
+  const { game_id } = useParams();
+  const [gameReady, setGameReady] = useState(false);
+  const [gameObj, setGameObj] = useState(initGameObj);
+  const [playerActive, setPlayerActive] = useState(false);
+  const [gameState, setGameState] = useState(initGameState);
+  const [playerInfo, setPlayerInfo] = useState(initPlayerObj);
+  const [win, setWin] = useState(false);
+  const [lose, setLose] = useState(false);
+  const [tie, setTie] = useState(false);
 
   const updateActivePlayer = () => {
     const active_player = gameObj.turn % 2 ^ gameObj.first_player;
     if (active_player === playerInfo.player_num) setPlayerActive(true);
     else setPlayerActive(false);
   };
+
+  const handleDisconnect = () => {
+    socket.disconnect();
+  };
+
+  const handleCellClick = (row_id, col_id) => {
+    socket.emit("make_move", row_id, col_id);
+  };
+
   useEffect(() => {
-    socket.on("game_updated", (game) => {
-      setGameObj(game);
-    });
+    setSocket(io.connect("http://localhost:3001"));
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      axios
+        .get(`/api/game/${game_id}`)
+        .then((res) => {
+          setGameObj(res.data);
+          socket.emit("join_game", res.data._id);
+        })
+        .catch(() => {
+          handleDisconnect();
+          routeHistory.replace(`/`);
+        });
+    }
+  }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("game_updated", (game) => {
+        setGameObj(game);
+      });
+      socket.on("game_ready", (ready) => {
+        console.log("game_ready", ready);
+        setGameReady(ready);
+      });
+      socket.on("join_game_success", (res) => {
+        setPlayerInfo(res.data);
+      });
+      socket.on("join_game_error", (err) => {
+        console.log("error", err.error);
+        routeHistory.push(`/`);
+      });
+      socket.on("end_game", (win) => {
+        if (win === 1) setWin(true);
+        else if (win < 0) setTie(true);
+        else setLose(true);
+      });
+    }
   }, [socket]);
 
   useEffect(() => {
@@ -116,29 +163,9 @@ let Game = (props) => {
   }, [playerInfo]);
 
   useEffect(() => {
-    axios
-      .get(`/api/game/${game_id}`)
-      .then((res) => {
-        setInvalidGame(false);
-        setGameObj(res.data);
-        socket.emit("join_game", res.data._id);
-        socket.on("join_game_success", (res) => {
-          setPlayerInfo(res.data);
-        });
-        socket.on("join_game_error", (err) => {
-          console.log("error", err.error);
-          routeHistory.push(`/`);
-        });
-      })
-      .catch(() => {
-        routeHistory.push(`/`);
-      });
-  }, []);
-
-  useEffect(() => {
     setGameState(gameObj.current_state);
     updateActivePlayer();
-  }, [gameObj.current_state]);
+  }, [gameObj]);
 
   return (
     <Grid
@@ -150,26 +177,60 @@ let Game = (props) => {
       alignContent="center"
       style={{ minHeight: "100%" }}
     >
+      {win ? (
+        <EndGameModal
+          open={win}
+          setOpen={setWin}
+          winner={1}
+          disconnectCallback={handleDisconnect}
+        />
+      ) : null}
+      {lose ? (
+        <EndGameModal
+          open={lose}
+          setOpen={setLose}
+          winner={0}
+          disconnectCallback={handleDisconnect}
+        />
+      ) : null}
+      {tie ? (
+        <EndGameModal
+          open={tie}
+          setOpen={setTie}
+          winner={-1}
+          disconnectCallback={handleDisconnect}
+        />
+      ) : null}
+
       <Grid container alignItems="center" direction="column">
         <Typography variant="h1">KATA GOLLA</Typography>
-        <Typography variant="h5" color={playerActive ? "primary" : "f0f0f0"}>
-          {playerActive
-            ? `Your turn! (${gameObj.player_signs[playerInfo.player_num]})`
-            : playerInfo.player_num
-            ? `Your friend's turn!  (${gameObj.player_signs[0]})`
-            : `Your friend's turn!  (${gameObj.player_signs[1]})`}
-        </Typography>
+        {gameReady ? (
+          <Typography
+            variant="h5"
+            color={playerActive ? "primary" : "textPrimary"}
+          >
+            {playerActive
+              ? `Your turn! (${gameObj.player_signs[playerInfo.player_num]})`
+              : playerInfo.player_num
+              ? `Your friend's turn!  (${gameObj.player_signs[0]})`
+              : `Your friend's turn!  (${gameObj.player_signs[1]})`}
+          </Typography>
+        ) : (
+          <Typography variant="h5" color="secondary">
+            Waiting for your friend...
+          </Typography>
+        )}
       </Grid>
 
       <Box height={50} />
       {gameState.map((row, idx) => {
         return (
-          <GridRow
+          <GameRow
             row={row}
             row_id={idx}
             key={idx}
-            game_id={game_id}
-            player_active={playerActive}
+            cellClickCallback={handleCellClick}
+            player_active={playerActive && gameReady}
           />
         );
       })}

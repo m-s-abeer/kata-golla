@@ -5,7 +5,7 @@ export const gameStyles = makeStyles((theme) => ({
     border: `5px solid ${theme.palette.primary.main}`,
     width: "6rem",
     height: "6rem",
-    ["@media (min-width:769px)"]: {
+    "@media (min-width:769px)": {
       width: "10rem",
       height: "10rem",
     },

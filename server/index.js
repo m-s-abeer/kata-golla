@@ -33,7 +33,7 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log(socket.id, "connected");
   socket.on("disconnect", async () => {
-    await remove_player(socket.id);
+    await remove_player(io, socket.id);
     console.log(`User Disconnected! Socket id: ${socket.id}`);
   });
 
@@ -53,6 +53,9 @@ io.on("connection", (socket) => {
       });
 
       await socket.join(game_id);
+      if (player_count === 1) {
+        await io.to(game_id).emit("game_ready", true);
+      }
     } else {
       await socket.emit("join_game_error", {
         message:
@@ -61,13 +64,19 @@ io.on("connection", (socket) => {
     }
   });
 
+  let endGameCallback = (socket_id, win) => {
+    io.to(socket_id).emit("end_game", win);
+  };
+
   socket.on("make_move", async (row_id, col_id) => {
     try {
-      const game = await make_a_move(socket, row_id, col_id);
+      const game = await make_a_move(socket, row_id, col_id, endGameCallback);
       if (game && game !== {}) {
         await io.to(game._id.toString()).emit("game_updated", game);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   });
 });
 
