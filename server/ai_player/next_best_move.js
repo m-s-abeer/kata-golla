@@ -1,5 +1,3 @@
-const is_winning_state = require("../services/game_services");
-
 const moves = [
   [0, 0],
   [0, 1],
@@ -12,9 +10,9 @@ const moves = [
   [2, 2],
 ];
 
-let get_best_move = (game_state, sign) => {
+let get_best_move = (game_state, sign, is_winning_state) => {
   if (is_winning_state(game_state))
-    return { wins: 1, move: [0, 0], steps: 0, lose_count: 0 };
+    return { wins: 0, move: [0, 0], steps: 0, lose_count: 1 };
 
   let randomized_moves = moves // randomizing it just so it doesn't always make the same boring move
     .map((value) => ({ value, sort: Math.random() }))
@@ -43,9 +41,14 @@ let get_best_move = (game_state, sign) => {
     // making the move
     let new_game_state = game_state;
     new_game_state[row_id][col_id] = sign;
-    opponent_game = get_best_move(new_game_state, sign === "X" ? "O" : "X");
+    opponent_game = get_best_move(
+      new_game_state,
+      sign === "X" ? "O" : "X",
+      is_winning_state
+    );
+    new_game_state[row_id][col_id] = "";
 
-    if (opponent.wins === 0) {
+    if (opponent_game.wins === 0) {
       // if opponent has no way to win, this is the optimal move
       result.wins = 1;
       result.move = [row_id, col_id];
@@ -61,7 +64,7 @@ let get_best_move = (game_state, sign) => {
       on_lost_max_steps = opponent_game.steps + 1;
     }
 
-    if (opponent.wins === 1) result.lose_count++;
+    if (opponent_game.wins === 1) result.lose_count++;
   });
 
   if (result.wins === 0) result.steps = on_lost_max_steps;

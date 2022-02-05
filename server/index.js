@@ -13,8 +13,9 @@ const {
 } = require("./services/player_services");
 const { make_a_move, add_ai, remove_ai } = require("./services/game_services");
 
-mongoose.connect("mongodb://localhost/kata-golla", () => {
-  console.log("Connected to DB");
+mongoose.connect("mongodb://localhost/kata-golla", (err) => {
+  if (err) throw err;
+  else console.log("Connected to DB");
 });
 
 app.use(cors());
@@ -68,9 +69,19 @@ io.on("connection", (socket) => {
     io.to(socket_id).emit("end_game", win);
   };
 
+  let gameReadyCallBack = (game_id, game_ready) => {
+    io.to(game_id).emit("game_ready", game_ready);
+  };
+
   socket.on("make_move", async (row_id, col_id) => {
     try {
-      const game = await make_a_move(socket, row_id, col_id, endGameCallback);
+      const game = await make_a_move(
+        socket,
+        row_id,
+        col_id,
+        gameReadyCallBack,
+        endGameCallback
+      );
       if (game && game !== {}) {
         await io.to(game._id.toString()).emit("game_updated", game);
       }
@@ -81,12 +92,14 @@ io.on("connection", (socket) => {
 
   socket.on("add_ai", async (game_id) => {
     const game = await add_ai(socket, game_id, endGameCallback);
-    await io.to(game._id.toString()).emit("game_updated", game);
+    await io.to(game_id).emit("game_updated", game);
+    gameReadyCallBack(game_id, true);
   });
 
   socket.on("remove_ai", async (game_id) => {
     const game = await remove_ai(game_id);
     await io.to(game._id.toString()).emit("game_updated", game);
+    gameReadyCallBack(game_id, false);
   });
 });
 

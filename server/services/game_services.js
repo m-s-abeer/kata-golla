@@ -121,8 +121,10 @@ let with_ai_move = async (
   active_player,
   game,
   gameObj,
+  gameReadyCallBack,
   endGameCallback
 ) => {
+  if (!player) return null;
   player_sign = game.player_signs[player.player_num];
   ai_sign = player_sign === "X" ? "O" : "X";
 
@@ -137,14 +139,16 @@ let with_ai_move = async (
       game.player1_wins++;
     }
     game = update_game_for_another_play(game);
+    gameReadyCallBack(game._id.toString(), false);
     endGameCallback(player.socket_id.toString(), 1);
   } else if (game.turn == 8) {
     game.ties = game.ties + 1;
     game = update_game_for_another_play(game);
+    gameReadyCallBack(game._id.toString(), false);
     endGameCallback(players.socket_id.toString(), -1);
   } else {
     game.current_state = new_game_state;
-    game.turn = game.turn + 1;
+    game.turn++;
 
     // make ai move
     game = make_an_ai_move(
@@ -152,6 +156,7 @@ let with_ai_move = async (
       game,
       player.player_num,
       ai_sign,
+      gameReadyCallBack,
       endGameCallback
     );
   }
@@ -161,7 +166,13 @@ let with_ai_move = async (
   return game;
 };
 
-let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
+let make_a_move = async (
+  socket,
+  row_id,
+  col_id,
+  gameReadyCallBack,
+  endGameCallback
+) => {
   const player = await Player.findOne({ socket_id: socket.id });
   if (!player) {
     return null;
@@ -196,6 +207,7 @@ let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
       active_player,
       game,
       gameObj,
+      gameReadyCallBack,
       endGameCallback
     );
   } else {
@@ -203,24 +215,38 @@ let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
   }
 };
 
-let make_an_ai_move = (socket, game, player_num, sign, endGameCallback) => {
-  const state_obj = get_best_move(game, sign);
-  const [row_id, col_id] = state_obj.move;
+let make_an_ai_move = (
+  socket_id,
+  game,
+  player_num,
+  sign,
+  gameReadyCallBack,
+  endGameCallback
+) => {
   const gameObj = game.toObject();
+  const best_move_obj = get_best_move(
+    gameObj.current_state,
+    sign,
+    is_winning_state
+  );
+  const [row_id, col_id] = best_move_obj.move;
 
   new_game_state = gameObj.current_state;
   new_game_state[row_id][col_id] = sign;
+  game.current_state = new_game_state;
   winning = is_winning_state(new_game_state);
 
   if (winning) {
     game = update_game_for_another_play(game);
-    if (player_num) game.player1_wins++;
-    else game.player0_wins++;
-    endGameCallback(socket.id, 0);
+    if (player_num) game.player0_wins++;
+    else game.player1_wins++;
+    gameReadyCallBack(game._id.toString(), false);
+    endGameCallback(socket_id, 0);
   } else if (game.turn == 8) {
     game = update_game_for_another_play(game);
     game.ties++;
-    endGameCallback(socket.id, -1);
+    gameReadyCallBack(game._id.toString(), false);
+    endGameCallback(socket_id, -1);
   } else {
     game.turn++;
   }
@@ -234,12 +260,12 @@ let add_ai = async (socket, game_id, endGameCallback) => {
   game.playing_with_ai = true;
 
   // ai move
-  let player = await PlayerOne.find({ socket_id: socket.id });
+  let player = await Player.findOne({ socket_id: socket.id });
   const active_player = game.turn % 2 ^ game.first_player;
   if (active_player !== player.player_num) {
     sign = game.player_signs[active_player];
     game = make_an_ai_move(
-      socket,
+      socket.id,
       game,
       player.player_num,
       sign,

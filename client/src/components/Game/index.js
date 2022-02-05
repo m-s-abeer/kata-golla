@@ -1,4 +1,4 @@
-import { Grid, Box, Typography } from "@material-ui/core";
+import { Grid, Box, Typography, Button } from "@material-ui/core";
 import React, { useState, useEffect } from "react";
 import { gameStyles } from "./styles";
 import axios from "axios";
@@ -80,6 +80,7 @@ let Game = (props) => {
     player0_wins: 0,
     player1_wins: 0,
     player_signs: ["X", "O"],
+    playing_with_ai: false,
     ties: 0,
     turn: 0,
     first_player: 0,
@@ -113,6 +114,14 @@ let Game = (props) => {
 
   const handleCellClick = (row_id, col_id) => {
     socket.emit("make_move", row_id, col_id);
+  };
+
+  const handlePlayWithAI = () => {
+    socket.emit("add_ai", game_id);
+  };
+
+  const handlePlayWithHuman = () => {
+    socket.emit("remove_ai", game_id);
   };
 
   useEffect(() => {
@@ -151,6 +160,7 @@ let Game = (props) => {
         routeHistory.push(`/`);
       });
       socket.on("end_game", (win) => {
+        console.log("end_game", win);
         if (win === 1) setWin(true);
         else if (win < 0) setTie(true);
         else setLose(true);
@@ -166,6 +176,8 @@ let Game = (props) => {
     setGameState(gameObj.current_state);
     updateActivePlayer();
   }, [gameObj]);
+
+  console.log("win", win, "lose", lose, "tie", tie);
 
   return (
     <Grid
@@ -220,9 +232,28 @@ let Game = (props) => {
             Waiting for your friend...
           </Typography>
         )}
+        <Box height={20} />
+        {gameReady || gameObj.playing_with_ai ? null : (
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handlePlayWithAI}
+          >
+            Play with AI?
+          </Button>
+        )}
+        {gameObj.playing_with_ai && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handlePlayWithHuman}
+          >
+            Play with human instead?
+          </Button>
+        )}
       </Grid>
 
-      <Box height={50} />
+      <Box height={40} />
       {gameState.map((row, idx) => {
         return (
           <GameRow
