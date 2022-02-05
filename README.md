@@ -58,8 +58,8 @@ Did you know it's my first time using the first four things mentioned below? It 
 
 - [Node.js](https://nodejs.org/)
 - [Express.js](https://expressjs.com/)
-- [MongoDB](https://www.mongodb.com/)
 - [Socket.io](https://socket.io/)
+- [Mongoose](https://mongoosejs.com/)
 - [React.js](https://reactjs.org/)
 - [Material UI](https://mui.com/)
 

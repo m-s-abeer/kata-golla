@@ -121,3 +121,4 @@ let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
 };
 
 module.exports.make_a_move = make_a_move;
+module.exports.is_winning_state = is_winning_state;
