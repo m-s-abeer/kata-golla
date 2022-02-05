@@ -1,3 +1,4 @@
+const { get_best_move } = require("../ai_player/next_best_move");
 const Game = require("../models/Game");
 const Player = require("../models/Player");
 
@@ -63,6 +64,100 @@ let update_game_for_another_play = (game) => {
       game.player_signs[0],
     ];
   }
+  game.playing_with_ai = false;
+  return game;
+};
+
+let one_v_one_move = async (
+  row_id,
+  col_id,
+  player,
+  players,
+  active_player,
+  game,
+  gameObj,
+  endGameCallback
+) => {
+  if (players[0].player_num === 1) {
+    [players[0], players[1]] = [players[1], players[0]];
+  }
+  player_sign = game.player_signs[player.player_num];
+
+  new_game_state = gameObj.current_state;
+  new_game_state[row_id][col_id] = player_sign;
+  winning = is_winning_state(new_game_state);
+
+  if (winning === true) {
+    if (active_player === 0) {
+      game.player0_wins++;
+      endGameCallback(players[0].socket_id.toString(), 1);
+      endGameCallback(players[1].socket_id.toString(), 0);
+    } else {
+      game.player1_wins++;
+      endGameCallback(players[0].socket_id.toString(), 0);
+      endGameCallback(players[1].socket_id.toString(), 1);
+    }
+    game = update_game_for_another_play(game);
+  } else if (game.turn == 8) {
+    game.ties = game.ties + 1;
+    game = update_game_for_another_play(game);
+    endGameCallback(players[0].socket_id.toString(), -1);
+    endGameCallback(players[1].socket_id.toString(), -1);
+  } else {
+    game.current_state = new_game_state;
+    game.turn = game.turn + 1;
+  }
+
+  await game.save();
+
+  return game;
+};
+
+let with_ai_move = async (
+  row_id,
+  col_id,
+  player,
+  players,
+  active_player,
+  game,
+  gameObj,
+  endGameCallback
+) => {
+  player_sign = game.player_signs[player.player_num];
+  ai_sign = player_sign === "X" ? "O" : "X";
+
+  new_game_state = gameObj.current_state;
+  new_game_state[row_id][col_id] = player_sign;
+  winning = is_winning_state(new_game_state);
+
+  if (winning === true) {
+    if (active_player === 0) {
+      game.player0_wins++;
+    } else {
+      game.player1_wins++;
+    }
+    game = update_game_for_another_play(game);
+    endGameCallback(player.socket_id.toString(), 1);
+  } else if (game.turn == 8) {
+    game.ties = game.ties + 1;
+    game = update_game_for_another_play(game);
+    endGameCallback(players.socket_id.toString(), -1);
+  } else {
+    game.current_state = new_game_state;
+    game.turn = game.turn + 1;
+
+    // make ai move
+    game = make_an_ai_move(
+      player.socket_id.toString(),
+      game,
+      player.player_num,
+      ai_sign,
+      endGameCallback
+    );
+  }
+
+  await game.save();
+
   return game;
 };
 
@@ -82,43 +177,91 @@ let make_a_move = async (socket, row_id, col_id, endGameCallback) => {
     players &&
     players.length == 2
   ) {
-    if (players[0].player_num === 1) {
-      [players[0], players[1]] = [players[1], players[0]];
-    }
-    player_sign = game.player_signs[player.player_num];
-
-    new_game_state = gameObj.current_state;
-    new_game_state[row_id][col_id] = player_sign;
-    winning = is_winning_state(new_game_state);
-
-    if (winning === true) {
-      if (active_player === 0) {
-        game.player0_wins++;
-        endGameCallback(players[0].socket_id.toString(), 1);
-        endGameCallback(players[1].socket_id.toString(), 0);
-      } else {
-        game.player1_wins++;
-        endGameCallback(players[0].socket_id.toString(), 0);
-        endGameCallback(players[1].socket_id.toString(), 1);
-      }
-      game = update_game_for_another_play(game);
-    } else if (game.turn == 8) {
-      game.ties = game.ties + 1;
-      game = update_game_for_another_play(game);
-      endGameCallback(players[0].socket_id.toString(), -1);
-      endGameCallback(players[1].socket_id.toString(), -1);
-    } else {
-      game.current_state = new_game_state;
-      game.turn = game.turn + 1;
-    }
-
-    await game.save();
-
-    return game;
+    return one_v_one_move(
+      row_id,
+      col_id,
+      player,
+      players,
+      active_player,
+      game,
+      gameObj,
+      endGameCallback
+    );
+  } else if (game.playing_with_ai && players && players.length == 1) {
+    return with_ai_move(
+      row_id,
+      col_id,
+      player,
+      players,
+      active_player,
+      game,
+      gameObj,
+      endGameCallback
+    );
   } else {
     throw new Error("Invalid move!");
   }
 };
 
+let make_an_ai_move = (socket, game, player_num, sign, endGameCallback) => {
+  const state_obj = get_best_move(game, sign);
+  const [row_id, col_id] = state_obj.move;
+  const gameObj = game.toObject();
+
+  new_game_state = gameObj.current_state;
+  new_game_state[row_id][col_id] = sign;
+  winning = is_winning_state(new_game_state);
+
+  if (winning) {
+    game = update_game_for_another_play(game);
+    if (player_num) game.player1_wins++;
+    else game.player0_wins++;
+    endGameCallback(socket.id, 0);
+  } else if (game.turn == 8) {
+    game = update_game_for_another_play(game);
+    game.ties++;
+    endGameCallback(socket.id, -1);
+  } else {
+    game.turn++;
+  }
+
+  return game;
+};
+
+let add_ai = async (socket, game_id, endGameCallback) => {
+  let game = await Game.findById(game_id);
+
+  game.playing_with_ai = true;
+
+  // ai move
+  let player = await PlayerOne.find({ socket_id: socket.id });
+  const active_player = game.turn % 2 ^ game.first_player;
+  if (active_player !== player.player_num) {
+    sign = game.player_signs[active_player];
+    game = make_an_ai_move(
+      socket,
+      game,
+      player.player_num,
+      sign,
+      endGameCallback
+    );
+  }
+
+  game.save();
+
+  return game;
+};
+
+let remove_ai = async (game_id) => {
+  let game = await Game.findById(game_id);
+
+  game.playing_with_ai = false;
+  game.save();
+
+  return game;
+};
+
+module.exports.add_ai = add_ai;
+module.exports.remove_ai = remove_ai;
 module.exports.make_a_move = make_a_move;
 module.exports.is_winning_state = is_winning_state;

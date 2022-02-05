@@ -11,7 +11,7 @@ const {
   get_player_init_info,
   remove_player,
 } = require("./services/player_services");
-const { make_a_move } = require("./services/game_services");
+const { make_a_move, add_ai, remove_ai } = require("./services/game_services");
 
 mongoose.connect("mongodb://localhost/kata-golla", () => {
   console.log("Connected to DB");
@@ -77,6 +77,16 @@ io.on("connection", (socket) => {
     } catch (e) {
       console.log(e);
     }
+  });
+
+  socket.on("add_ai", async (game_id) => {
+    const game = await add_ai(socket, game_id, endGameCallback);
+    await io.to(game._id.toString()).emit("game_updated", game);
+  });
+
+  socket.on("remove_ai", async (game_id) => {
+    const game = await remove_ai(game_id);
+    await io.to(game._id.toString()).emit("game_updated", game);
   });
 });
 

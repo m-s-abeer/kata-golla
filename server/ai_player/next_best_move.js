@@ -68,3 +68,5 @@ let get_best_move = (game_state, sign) => {
 
   return result;
 };
+
+module.exports.get_best_move = get_best_move;
