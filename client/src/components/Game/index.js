@@ -1,14 +1,42 @@
-import { Grid, Box, Typography, Button } from "@material-ui/core";
+import {
+  Grid,
+  Box,
+  Typography,
+  Button,
+  Fab,
+  IconButton,
+  Tooltip,
+} from "@material-ui/core";
 import React, { useState, useEffect } from "react";
 import { gameStyles } from "./styles";
 import axios from "axios";
 import { useHistory, useParams } from "react-router";
 import io from "socket.io-client";
 import EndGameModal from "../EndGamePopup";
+import ArrowBackIosIcon from "@material-ui/icons/ArrowBackIos";
+import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
 
 let GameCell = (props) => {
   const classes = gameStyles();
-  const { row_id, col_id, cellClickCallback, player_active, value } = props;
+  const {
+    row_id,
+    col_id,
+    playerSign,
+    cellClickCallback,
+    player_active,
+    value,
+  } = props;
+  const [mouseOver, setMouseOver] = useState(false);
+
+  let styler = player_active
+    ? value === ""
+      ? `${classes.singleCell} ${classes.activeHover}`
+      : `${classes.singleCell}`
+    : `${classes.singleCell} ${classes.disabledCell}`;
+  if (row_id > 0) styler += ` ${classes.topCellBorder}`;
+  if (row_id < 2) styler += ` ${classes.bottomCellBorder}`;
+  if (col_id > 0) styler += ` ${classes.leftCellBorder}`;
+  if (col_id < 2) styler += ` ${classes.rightCellBorder}`;
 
   return (
     <Grid
@@ -16,23 +44,36 @@ let GameCell = (props) => {
       container
       alignItems="center"
       justifyContent="center"
-      className={
-        player_active
-          ? value === ""
-            ? `${classes.singleCell} ${classes.activeHover}`
-            : `${classes.singleCell}`
-          : `${classes.singleCell} ${classes.disabledCell}`
-      }
+      className={styler}
       component="div"
-      onClick={player_active ? () => cellClickCallback(row_id, col_id) : null}
+      onClick={
+        player_active && value === ""
+          ? () => cellClickCallback(row_id, col_id)
+          : null
+      }
+      onMouseOver={() => setMouseOver(true)}
+      onMouseLeave={() => setMouseOver(false)}
     >
-      <Typography variant="h1">{value}</Typography>
+      {value ? (
+        <Typography variant="h1" color="primary">
+          {value}
+        </Typography>
+      ) : mouseOver && player_active ? (
+        <Typography
+          variant="h1"
+          style={{
+            color: "grey",
+          }}
+        >
+          {playerSign}
+        </Typography>
+      ) : null}
     </Grid>
   );
 };
 
 let GameRow = (props) => {
-  const { row, row_id, player_active, cellClickCallback } = props;
+  const { row, row_id, playerSign, player_active, cellClickCallback } = props;
   return (
     <Grid item container justifyContent="center" direction="row">
       {row.map((col, idx) => {
@@ -41,6 +82,7 @@ let GameRow = (props) => {
             value={col}
             row_id={row_id}
             col_id={idx}
+            playerSign={playerSign}
             player_active={player_active}
             cellClickCallback={cellClickCallback}
             key={idx}
@@ -55,13 +97,18 @@ let ScoreGrid = (props) => {
   const { title, score } = props;
   return (
     <Grid item container direction="column" xs={3} alignItems="center">
-      <Typography variant="h4">{title}</Typography>
-      <Typography variant="h4">{score}</Typography>
+      <Typography variant="h4" color="primary">
+        {title}
+      </Typography>
+      <Typography variant="h4" color="primary">
+        {score}
+      </Typography>
     </Grid>
   );
 };
 
 let Game = (props) => {
+  const classes = gameStyles();
   const [socket, setSocket] = useState(null);
   const initGameState = [
     ["", "", ""],
@@ -98,6 +145,7 @@ let Game = (props) => {
   const [playerActive, setPlayerActive] = useState(false);
   const [gameState, setGameState] = useState(initGameState);
   const [playerInfo, setPlayerInfo] = useState(initPlayerObj);
+  const [playerSign, setPlayerSign] = useState("X");
   const [win, setWin] = useState(false);
   const [lose, setLose] = useState(false);
   const [tie, setTie] = useState(false);
@@ -110,6 +158,15 @@ let Game = (props) => {
 
   const handleDisconnect = () => {
     socket.disconnect();
+  };
+
+  const handleGoBack = () => {
+    handleDisconnect();
+    routeHistory.replace(`/`);
+  };
+
+  const handleCopyGameLink = () => {
+    navigator.clipboard.writeText(window.location.href);
   };
 
   const handleCellClick = (row_id, col_id) => {
@@ -175,6 +232,7 @@ let Game = (props) => {
   useEffect(() => {
     setGameState(gameObj.current_state);
     updateActivePlayer();
+    setPlayerSign(gameObj.player_signs[playerInfo.player_num]);
   }, [gameObj]);
 
   console.log("win", win, "lose", lose, "tie", tie);
@@ -189,6 +247,21 @@ let Game = (props) => {
       alignContent="center"
       style={{ minHeight: "100%" }}
     >
+      <Fab
+        color="secondary"
+        aria-label="back"
+        onClick={handleGoBack}
+        size="large"
+        variant="circular"
+        className={classes.goBackFab}
+      >
+        <IconButton
+          size="large"
+          children={
+            <ArrowBackIosIcon fontSize="large" style={{ fill: "white" }} />
+          }
+        ></IconButton>
+      </Fab>
       {win ? (
         <EndGameModal
           open={win}
@@ -215,23 +288,40 @@ let Game = (props) => {
       ) : null}
 
       <Grid container alignItems="center" direction="column">
-        <Typography variant="h1">KATA GOLLA</Typography>
-        {gameReady ? (
-          <Typography
-            variant="h5"
-            color={playerActive ? "primary" : "textPrimary"}
-          >
-            {playerActive
-              ? `Your turn! (${gameObj.player_signs[playerInfo.player_num]})`
-              : playerInfo.player_num
-              ? `Your friend's turn!  (${gameObj.player_signs[0]})`
-              : `Your friend's turn!  (${gameObj.player_signs[1]})`}
-          </Typography>
-        ) : (
-          <Typography variant="h5" color="secondary">
-            Waiting for your friend...
-          </Typography>
-        )}
+        <Typography variant="h1" color="primary">
+          KATA GOLLA
+        </Typography>
+        <Grid
+          item
+          container
+          alignItems="center"
+          justifyContent="center"
+          direction="row"
+        >
+          {gameReady ? (
+            <Typography
+              variant="h5"
+              color={playerActive ? "primary" : "textPrimary"}
+            >
+              {playerActive
+                ? `Your turn! (${playerSign})`
+                : playerInfo.player_num
+                ? `Your friend's turn!  (${gameObj.player_signs[0]})`
+                : `Your friend's turn!  (${gameObj.player_signs[1]})`}
+            </Typography>
+          ) : (
+            <Typography variant="h5" color="secondary">
+              Waiting for your friend...
+            </Typography>
+          )}
+          <Tooltip title="Copy Game Link" aria-label="copy-link">
+            <IconButton
+              children={<FileCopyOutlinedIcon />}
+              color="primary"
+              onClick={handleCopyGameLink}
+            />
+          </Tooltip>
+        </Grid>
         <Box height={20} />
         {gameReady || gameObj.playing_with_ai ? null : (
           <Button
@@ -260,6 +350,7 @@ let Game = (props) => {
             row={row}
             row_id={idx}
             key={idx}
+            playerSign={playerSign}
             cellClickCallback={handleCellClick}
             player_active={playerActive && gameReady}
           />

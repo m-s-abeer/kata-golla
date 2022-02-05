@@ -7,7 +7,7 @@ export const popUpStyles = makeStyles((theme) => ({
     justifyContent: "center",
   },
   paper: {
-    backgroundColor: "rgba(175, 216, 255, 0.90)",
+    backgroundColor: "rgba(175, 216, 255, 0.75)",
     boxShadow: theme.shadows[5],
     width: "100%",
     padding: theme.spacing(2, 4, 3),

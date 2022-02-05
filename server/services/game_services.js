@@ -145,7 +145,7 @@ let with_ai_move = async (
     game.ties = game.ties + 1;
     game = update_game_for_another_play(game);
     gameReadyCallBack(game._id.toString(), false);
-    endGameCallback(players.socket_id.toString(), -1);
+    endGameCallback(player.socket_id.toString(), -1);
   } else {
     game.current_state = new_game_state;
     game.turn++;

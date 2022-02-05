@@ -46,9 +46,9 @@ export default function EndGameModal(props) {
             className={classes.paper}
           >
             {winner === 1 ? (
-              <img src={winner_png} alt="TallyKhata" height="30%" width="30%" />
+              <img src={winner_png} alt="TallyKhata" height="20%" width="20%" />
             ) : winner === 0 ? (
-              <img src={loser_png} alt="TallyKhata" height="30%" width="30%" />
+              <img src={loser_png} alt="TallyKhata" height="20%" width="20%" />
             ) : (
               <img src={tie_png} alt="TallyKhata" height="20%" width="20%" />
             )}
@@ -58,7 +58,7 @@ export default function EndGameModal(props) {
                 ? "That was a nice game! Play another one?"
                 : winner === 0
                 ? "You can definitely do better next time. Try again?"
-                : "Awesome! Nothing to lose! Let's play another!!!"}
+                : "That's a tie! Nothing to lose! Let's play another!!!"}
             </h1>
             <Grid style={{ height: "20px" }} />
             <Grid item container justifyContent="center">
