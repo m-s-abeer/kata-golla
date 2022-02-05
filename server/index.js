@@ -1,19 +1,24 @@
 const express = require("express");
 const app = express();
+const path = require("path");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
-const { nanoid } = require("nanoid");
 const mongoose = require("mongoose");
 const gamesRoute = require("./routes/games");
 const bodyParser = require("body-parser");
+
+try {
+  require("dotenv").config({ path: __dirname + "/.env" });
+} catch (e) {}
+
 const {
   get_player_init_info,
   remove_player,
 } = require("./services/player_services");
 const { make_a_move, add_ai, remove_ai } = require("./services/game_services");
 
-mongoose.connect("mongodb://localhost/kata-golla", (err) => {
+mongoose.connect(process.env.MONGO_URL, (err) => {
   if (err) throw err;
   else console.log("Connected to DB");
 });
@@ -21,12 +26,20 @@ mongoose.connect("mongodb://localhost/kata-golla", (err) => {
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/api/game", gamesRoute);
+app.use(express.static(path.join(__dirname, "build")));
 
+try {
+  app.get("/*", (req, res) => {
+    res.sendFile(path.join(__dirname, "build", "index.html"));
+  });
+} catch (e) {
+  console.log(e);
+}
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
@@ -103,6 +116,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3001, () => {
+server.listen(process.env.PORT, () => {
   console.log("SERVER RUNNING!");
 });

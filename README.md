@@ -8,15 +8,15 @@
   </a> -->
 
   <h2 align="center">&lt;&lt; Kata Golla &gt;&gt;</h2>
-  <h3 align="center">Bored? Check out my KG game(kindergarten you say? probably!).</h3>
+  <h3 align="center">Bored? Check out my KG game(for kindergarten kids you say? probably!).</h3>
   <h3>You're "welcome"!</h3>
   <hr />
   <p align="center">
     <!-- <a href=""><strong>Explore the docs »</strong></a>
     <br /> -->
     <br />
-    <!-- <a href="#">View Demo(not now!)</a>
-    · -->
+    <a href="https://kata-golla-msa.herokuapp.com/">View Demo</a>
+    ·
     <a href="https://github.com/m-s-abeer/kata-golla/issues">Report Bug</a>
     ·
     <a href="https://github.com/m-s-abeer/kata-golla/issues">Request Feature</a>
@@ -73,22 +73,48 @@ I'll be explaining how you can start it up locally for now.
 
 ### Prerequisites
 
-- `npm` version `8.1.2` (you might want to use nvm to get the specific version)
-- `mongodb` version `5.0.6` (this should be running locally)
+- `node` version `16.x`
+- `mongodb` or `mongo atlas` version `^4.x`
 
-### Installation
+### Docker Installation
 
-1. Clone the repo locally using either of them:-
+> In case you want to use mongo atlas, skip the mongo section below and update MONGO_URL in project_root/server/.env instead.
+
+```sh
+git clone https://github.com/m-s-abeer/kata-golla.git
+cd kata-golla
+
+cp client/env.example client/.env
+cp server/env.example client/.env
+
+mongo
+use kata-golla
+exit
+
+docker build -t kata-golla .
+docker run -d --name="kata-golla-3001" -p 3001:3001 kata-golla
+```
+
+- Ready to go! Checkout `http://localhost:3001/` and start playing! (you may change port 3001 if required)
+- The react client is served as a static build and it's routed from node server.
+- To stop the docker container run `docker stop kata-golla-3001`
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+### Local Installation
+
+Here we'll use stand-alone React and Node server. Just for the !fun of it! ⚆ \_ ⚆
+
+1. Clone the repo locally:-
 
    > HTTPS: `git clone https://github.com/m-s-abeer/kata-golla.git`
-
-   > SSH: `git clone git@github.com:m-s-abeer/kata-golla.git`
 
 2. Create a local mongo database from mongo CLI
    ```sh
    mongo
    use kata-golla
+   exit
    ```
+   > You can use a mongo atlas cluster as well, in that case update MONGO_URL in project_root/server/.env later on
 3. Get into project root `cd kata-golla`
 4. Install client-side NPM packages and start front-end
 
@@ -97,6 +123,7 @@ I'll be explaining how you can start it up locally for now.
    ```sh
    cd client
    npm install
+   cp env.example ./.env
    npm start
    ```
 
@@ -107,9 +134,11 @@ I'll be explaining how you can start it up locally for now.
    ```sh
    cd server
    npm install
+   cp env.example ./.env
    npm start
    ```
 
+- Ready to go! Checkout `http://localhost:3000/` and start playing!
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->

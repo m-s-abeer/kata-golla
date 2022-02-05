@@ -150,12 +150,6 @@ let Game = (props) => {
   const [lose, setLose] = useState(false);
   const [tie, setTie] = useState(false);
 
-  const updateActivePlayer = () => {
-    const active_player = gameObj.turn % 2 ^ gameObj.first_player;
-    if (active_player === playerInfo.player_num) setPlayerActive(true);
-    else setPlayerActive(false);
-  };
-
   const handleDisconnect = () => {
     socket.disconnect();
   };
@@ -181,8 +175,20 @@ let Game = (props) => {
     socket.emit("remove_ai", game_id);
   };
 
+  const updateActivePlayer = () => {
+    const active_player = gameObj.turn % 2 ^ gameObj.first_player;
+    if (active_player === playerInfo.player_num) setPlayerActive(true);
+    else setPlayerActive(false);
+  };
+
   useEffect(() => {
-    setSocket(io.connect("http://localhost:3001"));
+    setSocket(
+      io.connect(
+        process.env.NODE_ENV === "development"
+          ? process.env.REACT_APP_API_PROXY
+          : "/"
+      )
+    );
   }, []);
 
   useEffect(() => {
@@ -227,15 +233,11 @@ let Game = (props) => {
 
   useEffect(() => {
     updateActivePlayer();
-  }, [playerInfo]);
-
-  useEffect(() => {
-    setGameState(gameObj.current_state);
-    updateActivePlayer();
-    setPlayerSign(gameObj.player_signs[playerInfo.player_num]);
-  }, [gameObj]);
-
-  console.log("win", win, "lose", lose, "tie", tie);
+    if (gameObj && gameObj != {}) {
+      setGameState(gameObj.current_state);
+      setPlayerSign(gameObj.player_signs[playerInfo.player_num]);
+    }
+  }, [gameObj, playerInfo]);
 
   return (
     <Grid
