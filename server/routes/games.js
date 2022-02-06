@@ -30,7 +30,9 @@ router.get("/:gameId", async (req, res) => {
     const game = await Game.findById(gameId);
     res.json(game);
   } catch (err) {
-    res.status(404).json(err);
+    res.status(404).send({
+      error: "This game doesn't exist!",
+    });
   }
 });
 

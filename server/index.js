@@ -18,6 +18,7 @@ const {
 } = require("./services/player_services");
 const { add_ai, remove_ai } = require("./services/player_v_ai_services");
 const { make_a_move } = require("./services/game_services");
+const { is_ai_playing } = require("./services/ai_services");
 
 mongoose.connect(process.env.MONGO_URL, (err) => {
   if (err) throw err;
@@ -56,7 +57,7 @@ io.on("connection", (socket) => {
     let game_sockets = io.sockets.adapter.rooms.get(game_id);
     let player_count = game_sockets ? game_sockets.size : 0;
 
-    if (player_count < 2) {
+    if (player_count === 0 || (player_count === 1 && !is_ai_playing(game_id))) {
       player_init_info = await get_player_init_info(
         game_sockets,
         socket.id,

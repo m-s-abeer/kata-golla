@@ -7,7 +7,7 @@ import {
   IconButton,
   Tooltip,
 } from "@material-ui/core";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { gameStyles } from "./styles";
 import axios from "axios";
 import { useHistory, useParams } from "react-router";
@@ -15,6 +15,7 @@ import io from "socket.io-client";
 import EndGameModal from "../EndGamePopup";
 import ArrowBackIosIcon from "@material-ui/icons/ArrowBackIos";
 import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
+import { GlobalSnackbarContext } from "../../contexts/snackbarContext";
 
 let GameCell = (props) => {
   const classes = gameStyles();
@@ -102,8 +103,6 @@ let ScoreGrid = (props) => {
 };
 
 let Game = (props) => {
-  const classes = gameStyles();
-  const [socket, setSocket] = useState(null);
   const initGameState = [
     ["", "", ""],
     ["", "", ""],
@@ -133,7 +132,9 @@ let Game = (props) => {
   };
 
   let routeHistory = useHistory();
+  const classes = gameStyles();
   const { gameId } = useParams();
+  const [socket, setSocket] = useState(null);
   const [gameReady, setGameReady] = useState(false);
   const [gameObj, setGameObj] = useState(initGameObj);
   const [playerActive, setPlayerActive] = useState(false);
@@ -143,6 +144,7 @@ let Game = (props) => {
   const [win, setWin] = useState(false);
   const [lose, setLose] = useState(false);
   const [tie, setTie] = useState(false);
+  const { onErrorSnackbar } = useContext(GlobalSnackbarContext);
 
   const handleDisconnect = () => {
     socket.disconnect();
@@ -187,7 +189,8 @@ let Game = (props) => {
           setGameObj(res.data);
           socket.emit("join_game", res.data._id);
         })
-        .catch(() => {
+        .catch((e) => {
+          onErrorSnackbar("The room is invalid.");
           handleDisconnect();
           routeHistory.replace(`/`);
         });
@@ -208,6 +211,7 @@ let Game = (props) => {
       });
       socket.on("join_game_error", (err) => {
         console.log("error", err.error);
+        onErrorSnackbar("The room is already full.");
         routeHistory.push(`/`);
       });
       socket.on("end_game", (win) => {
@@ -220,12 +224,9 @@ let Game = (props) => {
   }, [socket]);
 
   useEffect(() => {
-    const updateActivePlayer = () => {
-      const active_player = gameObj.turn % 2 ^ gameObj.first_player;
-      if (active_player === playerInfo.player_num) setPlayerActive(true);
-      else setPlayerActive(false);
-    };
-    updateActivePlayer();
+    const active_player = gameObj.turn % 2 ^ gameObj.first_player;
+    if (active_player === playerInfo.player_num) setPlayerActive(true);
+    else setPlayerActive(false);
     if (gameObj && gameObj !== {}) {
       setGameState(gameObj.current_state);
       setPlayerSign(gameObj.player_signs[playerInfo.player_num]);

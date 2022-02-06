@@ -47,4 +47,5 @@ let make_a_move = async (
     throw new Error("Invalid move!");
   }
 };
+
 module.exports.make_a_move = make_a_move;

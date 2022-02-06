@@ -5,6 +5,7 @@ import { MuiThemeProvider, createTheme } from "@material-ui/core/styles";
 import Game from "./components/Game";
 import Home from "./components/Home";
 import "./App.css";
+import { GlobalSnackbar } from "./contexts/snackbarContext";
 
 const themeLight = createTheme({
   palette: {
@@ -21,16 +22,18 @@ export default function App() {
   return (
     <MuiThemeProvider theme={themeLight}>
       <CssBaseline />
-      <Router>
-        <Switch>
-          <Route path="/play/:gameId">
-            <Game />
-          </Route>
-          <Route exact path="/">
-            <Home />
-          </Route>
-        </Switch>
-      </Router>
+      <GlobalSnackbar>
+        <Router>
+          <Switch>
+            <Route path="/play/:gameId">
+              <Game />
+            </Route>
+            <Route exact path="/">
+              <Home />
+            </Route>
+          </Switch>
+        </Router>
+      </GlobalSnackbar>
     </MuiThemeProvider>
   );
 }

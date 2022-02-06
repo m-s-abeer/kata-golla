@@ -1,3 +1,4 @@
+const Game = require("../models/Game");
 const { get_winner_or_tie } = require("./get_winner_or_tie");
 const moves = [
   [0, 0],
@@ -10,6 +11,12 @@ const moves = [
   [2, 1],
   [2, 2],
 ];
+
+let is_ai_playing = async (game_id) => {
+  let game = await Game.findById(game_id);
+
+  return game.playing_with_ai === true;
+};
 
 let get_best_move = (gameObj, sign) => {
   // base cases
@@ -56,3 +63,4 @@ let get_best_move = (gameObj, sign) => {
 };
 
 module.exports.get_best_move = get_best_move;
+module.exports.is_ai_playing = is_ai_playing;
