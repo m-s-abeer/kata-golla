@@ -12,7 +12,7 @@ export let GlobalSnackbar = (props) => {
   let [snack, setSnack] = useState({
     show: false,
     message: "",
-    severity: "success",
+    severity: "error",
   });
 
   let handleClose = () => {

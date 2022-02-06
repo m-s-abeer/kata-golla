@@ -10,6 +10,10 @@ const GameSchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  ai_type: {
+    type: String,
+    default: "YIN",
+  },
   player0_wins: {
     type: Number,
     default: 0,

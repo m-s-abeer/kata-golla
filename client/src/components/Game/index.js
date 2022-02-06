@@ -163,8 +163,12 @@ let Game = (props) => {
     socket.emit("make_move", rowId, colId);
   };
 
-  const handlePlayWithAI = () => {
-    socket.emit("add_ai", gameId);
+  const handlePlayWIthYin = () => {
+    socket.emit("add_ai", gameId, "YIN");
+  };
+
+  const handlePlayWIthYang = () => {
+    socket.emit("add_ai", gameId, "YANG");
   };
 
   const handlePlayWithHuman = () => {
@@ -320,13 +324,23 @@ let Game = (props) => {
         </Grid>
         <Box height={20} />
         {gameReady || gameObj.playing_with_ai ? null : (
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handlePlayWithAI}
-          >
-            Play with AI?
-          </Button>
+          <Grid container item alignItems="center" justifyContent="center">
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handlePlayWIthYin}
+            >
+              Play with YIN?
+            </Button>
+            <Grid style={{ width: 20 }} />
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handlePlayWIthYang}
+            >
+              Play with YANG?
+            </Button>
+          </Grid>
         )}
         {gameObj.playing_with_ai && (
           <Button

@@ -1,6 +1,6 @@
 const Game = require("../models/Game");
 const Player = require("../models/Player");
-const { get_best_move } = require("./ai_services");
+const { get_yin_move, get_yang_move } = require("./ai_services");
 const { get_winner_or_tie } = require("./get_winner_or_tie");
 const update_game_for_another_play = require("./new_game_services");
 
@@ -13,7 +13,11 @@ let make_an_ai_move = (
   endGameCallback
 ) => {
   const gameObj = game.toObject();
-  const best_move_obj = get_best_move(gameObj, sign);
+  console.log("yin_or_yang", game, game.ai_type === "YIN");
+  const best_move_obj =
+    game.ai_type === "YIN"
+      ? get_yin_move(gameObj, sign)
+      : get_yang_move(gameObj, sign);
   const [row_id, col_id] = best_move_obj.move;
 
   new_game_state = gameObj.current_state;
@@ -88,10 +92,11 @@ let player_v_ai_move = async (
   return game;
 };
 
-let add_ai = async (socket, game_id, endGameCallback) => {
+let add_ai = async (socket, game_id, ai_type, endGameCallback) => {
   let game = await Game.findById(game_id);
 
   game.playing_with_ai = true;
+  game.ai_type = ai_type;
 
   // ai move
   let player = await Player.findOne({ socket_id: socket.id });

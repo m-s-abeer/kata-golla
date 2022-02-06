@@ -105,8 +105,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("add_ai", async (game_id) => {
-    const game = await add_ai(socket, game_id, endGameCallback);
+  socket.on("add_ai", async (game_id, ai_type) => {
+    const game = await add_ai(socket, game_id, ai_type, endGameCallback);
     await io.to(game_id).emit("game_updated", game);
     gameReadyCallBack(game_id, true);
   });
