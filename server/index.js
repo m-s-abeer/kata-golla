@@ -16,7 +16,8 @@ const {
   get_player_init_info,
   remove_player,
 } = require("./services/player_services");
-const { make_a_move, add_ai, remove_ai } = require("./services/game_services");
+const { add_ai, remove_ai } = require("./services/player_v_ai_services");
+const { make_a_move } = require("./services/game_services");
 
 mongoose.connect(process.env.MONGO_URL, (err) => {
   if (err) throw err;

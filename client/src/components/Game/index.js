@@ -18,14 +18,8 @@ import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
 
 let GameCell = (props) => {
   const classes = gameStyles();
-  const {
-    row_id,
-    col_id,
-    playerSign,
-    cellClickCallback,
-    player_active,
-    value,
-  } = props;
+  const { rowId, colId, playerSign, cellClickCallback, player_active, value } =
+    props;
   const [mouseOver, setMouseOver] = useState(false);
 
   let styler = player_active
@@ -33,10 +27,10 @@ let GameCell = (props) => {
       ? `${classes.singleCell} ${classes.activeHover}`
       : `${classes.singleCell}`
     : `${classes.singleCell} ${classes.disabledCell}`;
-  if (row_id > 0) styler += ` ${classes.topCellBorder}`;
-  if (row_id < 2) styler += ` ${classes.bottomCellBorder}`;
-  if (col_id > 0) styler += ` ${classes.leftCellBorder}`;
-  if (col_id < 2) styler += ` ${classes.rightCellBorder}`;
+  if (rowId > 0) styler += ` ${classes.topCellBorder}`;
+  if (rowId < 2) styler += ` ${classes.bottomCellBorder}`;
+  if (colId > 0) styler += ` ${classes.leftCellBorder}`;
+  if (colId < 2) styler += ` ${classes.rightCellBorder}`;
 
   return (
     <Grid
@@ -48,7 +42,7 @@ let GameCell = (props) => {
       component="div"
       onClick={
         player_active && value === ""
-          ? () => cellClickCallback(row_id, col_id)
+          ? () => cellClickCallback(rowId, colId)
           : null
       }
       onMouseOver={() => setMouseOver(true)}
@@ -73,15 +67,15 @@ let GameCell = (props) => {
 };
 
 let GameRow = (props) => {
-  const { row, row_id, playerSign, player_active, cellClickCallback } = props;
+  const { row, rowId, playerSign, player_active, cellClickCallback } = props;
   return (
     <Grid item container justifyContent="center" direction="row">
       {row.map((col, idx) => {
         return (
           <GameCell
             value={col}
-            row_id={row_id}
-            col_id={idx}
+            rowId={rowId}
+            colId={idx}
             playerSign={playerSign}
             player_active={player_active}
             cellClickCallback={cellClickCallback}
@@ -117,7 +111,7 @@ let Game = (props) => {
   ];
 
   const initPlayerObj = {
-    game_id: "",
+    gameId: "",
     socket_id: "",
     player_num: "",
   };
@@ -139,7 +133,7 @@ let Game = (props) => {
   };
 
   let routeHistory = useHistory();
-  const { game_id } = useParams();
+  const { gameId } = useParams();
   const [gameReady, setGameReady] = useState(false);
   const [gameObj, setGameObj] = useState(initGameObj);
   const [playerActive, setPlayerActive] = useState(false);
@@ -163,22 +157,16 @@ let Game = (props) => {
     navigator.clipboard.writeText(window.location.href);
   };
 
-  const handleCellClick = (row_id, col_id) => {
-    socket.emit("make_move", row_id, col_id);
+  const handleCellClick = (rowId, colId) => {
+    socket.emit("make_move", rowId, colId);
   };
 
   const handlePlayWithAI = () => {
-    socket.emit("add_ai", game_id);
+    socket.emit("add_ai", gameId);
   };
 
   const handlePlayWithHuman = () => {
-    socket.emit("remove_ai", game_id);
-  };
-
-  const updateActivePlayer = () => {
-    const active_player = gameObj.turn % 2 ^ gameObj.first_player;
-    if (active_player === playerInfo.player_num) setPlayerActive(true);
-    else setPlayerActive(false);
+    socket.emit("remove_ai", gameId);
   };
 
   useEffect(() => {
@@ -194,7 +182,7 @@ let Game = (props) => {
   useEffect(() => {
     if (socket) {
       axios
-        .get(`/api/game/${game_id}`)
+        .get(`/api/game/${gameId}`)
         .then((res) => {
           setGameObj(res.data);
           socket.emit("join_game", res.data._id);
@@ -232,8 +220,13 @@ let Game = (props) => {
   }, [socket]);
 
   useEffect(() => {
+    const updateActivePlayer = () => {
+      const active_player = gameObj.turn % 2 ^ gameObj.first_player;
+      if (active_player === playerInfo.player_num) setPlayerActive(true);
+      else setPlayerActive(false);
+    };
     updateActivePlayer();
-    if (gameObj && gameObj != {}) {
+    if (gameObj && gameObj !== {}) {
       setGameState(gameObj.current_state);
       setPlayerSign(gameObj.player_signs[playerInfo.player_num]);
     }
@@ -258,7 +251,7 @@ let Game = (props) => {
         className={classes.goBackFab}
       >
         <IconButton
-          size="large"
+          size="medium"
           children={
             <ArrowBackIosIcon fontSize="large" style={{ fill: "white" }} />
           }
@@ -350,7 +343,7 @@ let Game = (props) => {
         return (
           <GameRow
             row={row}
-            row_id={idx}
+            rowId={idx}
             key={idx}
             playerSign={playerSign}
             cellClickCallback={handleCellClick}

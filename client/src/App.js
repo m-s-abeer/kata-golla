@@ -23,7 +23,7 @@ export default function App() {
       <CssBaseline />
       <Router>
         <Switch>
-          <Route path="/play/:game_id">
+          <Route path="/play/:gameId">
             <Game />
           </Route>
           <Route exact path="/">
