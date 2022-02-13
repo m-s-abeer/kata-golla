@@ -1,5 +1,4 @@
 let get_winner_or_tie = (gameObj) => {
-  if (gameObj.turn === 9) return "T";
   const game_state = gameObj.current_state;
   const signs = ["O", "X"];
   for (let si = 0; si < 2; si++) {
@@ -35,6 +34,7 @@ let get_winner_or_tie = (gameObj) => {
         return sign;
     }
   }
+  if (gameObj.turn === 9) return "T";
   return null;
 };
 

@@ -13,7 +13,6 @@ let make_an_ai_move = (
   endGameCallback
 ) => {
   const gameObj = game.toObject();
-  console.log("yin_or_yang", game, game.ai_type === "YIN");
   const best_move_obj =
     game.ai_type === "YIN"
       ? get_yin_move(gameObj, sign)
